@@ -45,6 +45,9 @@ public class Cache
 		options.addOption(null, "npcs", true, "directory to dump npcs to");
 		options.addOption(null, "objects", true, "directory to dump objects to");
 		options.addOption(null, "sprites", true, "directory to dump sprites to");
+		options.addOption(null, "enums", true, "directory to dump enums to. Only dumps one if --enumId is set");
+
+		options.addOption(null, "enumId", true, "enumId to dump (requires --enums)");
 
 		CommandLineParser parser = new DefaultParser();
 		CommandLine cmd;
@@ -115,6 +118,28 @@ public class Cache
 			System.out.println("Dumping sprites to " + spritedir);
 			dumpSprites(store, new File(spritedir));
 		}
+		else if (cmd.hasOption("enums"))
+		{
+			String enumdir = cmd.getOptionValue("enums");
+
+			if (enumdir == null)
+			{
+				System.err.println("Enum directory must be specified");
+				return;
+			}
+
+			if (cmd.hasOption("enumId"))
+			{
+				int enumId = Integer.parseInt(cmd.getOptionValue("enumId"));
+				System.out.println("Dumping enum " + enumId + " to " + enumdir);
+				dumpEnum(store, new File(enumdir), enumId);
+			}
+			else
+			{
+				System.out.println("Dumping enums to " + enumdir);
+				dumpEnums(store, new File(enumdir));
+			}
+		}
 		else
 		{
 			System.err.println("Nothing to do");
@@ -157,5 +182,23 @@ public class Cache
 		SpriteManager dumper = new SpriteManager(store);
 		dumper.load();
 		dumper.export(spritedir);
+	}
+
+	private static void dumpEnums(Store store, File enumsdir) throws IOException
+	{
+		EnumManager dumper = new EnumManager(store);
+		dumper.load();
+		dumper.exportAll(enumsdir);
+		dumper.javaAll(enumsdir, false);
+		dumper.javaAll(enumsdir, true);
+	}
+
+	private static void dumpEnum(Store store, File enumsdir, int enumId) throws IOException
+	{
+		EnumManager dumper = new EnumManager(store);
+		dumper.load();
+		dumper.exportOne(enumsdir, enumId);
+		dumper.java(enumsdir, enumId, "Enum" + enumId, false);
+		dumper.java(enumsdir, enumId, "Enum" + enumId + "Reversed", true);
 	}
 }
