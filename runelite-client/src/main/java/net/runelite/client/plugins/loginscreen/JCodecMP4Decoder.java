@@ -169,6 +169,9 @@ public class JCodecMP4Decoder
 					try
 					{
 						bufferFrames(FRAME_BUFFER_SIZE);
+						// if we dont sleep preloadedFrames is always locked so we can't get any frames from it
+						// ive found 3 ms is a nice balance between having frames in the buffer vs being able to retrieve them
+						Thread.sleep(3);
 					}
 					catch (IOException | InterruptedException e)
 					{
@@ -179,13 +182,17 @@ public class JCodecMP4Decoder
 
 			private void bufferFrames(int size) throws IOException, InterruptedException
 			{
-				// FIXME: this is very stupid but it works
-				Thread.sleep(1);
 				while (preloadedFrames.size() < size)
 				{
 					Packet frame = videoTrack.nextFrame();
 					if (frame == null)
 					{
+						// this will cause a lack of preloaded frames when the video loops,
+						// but the way the client handles it makes this a non-issue
+						if (!preloadedFrames.isEmpty())
+						{
+							break;
+						}
 						videoTrack.gotoFrame(0);
 						frame = videoTrack.nextFrame();
 					}
@@ -236,7 +243,7 @@ public class JCodecMP4Decoder
 				ByteBuffer codecBuffer = meta.getCodecPrivate().duplicate();
 				ByteBuffer nalBuffer;
 
-				// search the metadata for the size units
+				// search the metadata for the size unit
 				while ((nalBuffer = H264Utils.nextNALUnit(codecBuffer)) != null)
 				{
 					// read unit from the nalBuffer
