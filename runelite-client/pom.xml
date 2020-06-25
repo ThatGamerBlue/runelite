@@ -209,6 +209,17 @@
 			<artifactId>jsr305</artifactId>
 			<version>3.0.2</version>
 		</dependency>
+		<!-- Used for MP4 decoding -->
+		<dependency>
+			<groupId>org.jcodec</groupId>
+			<artifactId>jcodec</artifactId>
+			<version>0.2.6-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>org.jcodec</groupId>
+			<artifactId>jcodec-javase</artifactId>
+			<version>0.2.6-SNAPSHOT</version>
+		</dependency>
 
 		<dependency>
 			<groupId>net.runelite</groupId>
@@ -274,12 +285,6 @@
 			<artifactId>mockwebserver</artifactId>
 			<version>3.7.0</version>
 			<scope>test</scope>
-		</dependency>
-		<!-- Used for MP4 decoding, is no longer maintained -->
-		<dependency>
-			<groupId>xuggle</groupId>
-			<artifactId>xuggle-xuggler</artifactId>
-			<version>5.4</version>
 		</dependency>
 	</dependencies>
 
