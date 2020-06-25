@@ -86,6 +86,12 @@ public class JCodecMP4Decoder
 		return null;
 	}
 
+	public void destroy()
+	{
+		frameGrab.stop();
+		frameGrab = null;
+	}
+
 	static class JCodecMP4FrameGrab
 	{
 		private final MP4DecoderThread mp4DecoderThread;

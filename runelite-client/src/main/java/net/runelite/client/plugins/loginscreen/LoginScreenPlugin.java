@@ -417,6 +417,10 @@ public class LoginScreenPlugin extends Plugin implements KeyListener
 	{
 		try
 		{
+			if (decoder != null)
+			{
+				decoder.destroy();
+			}
 			return new JCodecMP4Decoder(ANIMATED_LOGIN_SCREEN_FILE);
 		}
 		catch (Exception e)
