@@ -51,18 +51,18 @@ import org.jcodec.containers.mp4.demuxer.MP4Demuxer;
 import org.jcodec.scale.ColorUtil;
 
 @Slf4j
-public class JCodecMP4Decoder
+public class ThreadedJCodecMP4Decoder implements IJCodecMP4Decoder
 {
 	@Getter
 	private boolean valid;
 
-	private JCodecMP4FrameGrab frameGrab;
+	private ThreadedJCodecMP4FrameGrab frameGrab;
 
-	public JCodecMP4Decoder(final File file)
+	public ThreadedJCodecMP4Decoder(final File file)
 	{
 		try
 		{
-			frameGrab = new JCodecMP4FrameGrab(new AutoFileChannelWrapper(file));
+			frameGrab = new ThreadedJCodecMP4FrameGrab(new AutoFileChannelWrapper(file));
 		}
 		catch (IOException | IllegalArgumentException | InterruptedException e)
 		{
@@ -92,11 +92,11 @@ public class JCodecMP4Decoder
 		frameGrab = null;
 	}
 
-	static class JCodecMP4FrameGrab
+	static class ThreadedJCodecMP4FrameGrab
 	{
 		private final MP4DecoderThread mp4DecoderThread;
 
-		public JCodecMP4FrameGrab(AutoFileChannelWrapper afcw) throws IOException, InterruptedException
+		public ThreadedJCodecMP4FrameGrab(AutoFileChannelWrapper afcw) throws IOException, InterruptedException
 		{
 			mp4DecoderThread = new MP4DecoderThread(afcw);
 			mp4DecoderThread.setUncaughtExceptionHandler((thread, ex) ->
@@ -180,7 +180,7 @@ public class JCodecMP4Decoder
 				}
 			}
 
-			private void bufferFrames(int size) throws IOException, InterruptedException
+			private void bufferFrames(int size) throws IOException
 			{
 				while (preloadedFrames.size() < size)
 				{
@@ -197,7 +197,7 @@ public class JCodecMP4Decoder
 						frame = videoTrack.nextFrame();
 					}
 
-					BufferedImage image = toBufferedImage(decoder.decodeFrame(frame.getData(), getBuffer()));
+					BufferedImage image = JCodecUtil.toBufferedImage(decoder.decodeFrame(frame.getData(), getBuffer()));
 					synchronized (preloadedFrames)
 					{
 						preloadedFrames.put(frame.getPtsD(), image);
@@ -205,7 +205,7 @@ public class JCodecMP4Decoder
 				}
 			}
 
-			public BufferedImage getFrame() throws IOException
+			public BufferedImage getFrame()
 			{
 				synchronized (preloadedFrames)
 				{
@@ -224,81 +224,10 @@ public class JCodecMP4Decoder
 			{
 				if (buffers == null)
 				{
-					Size size = calcBufferSize();
+					Size size = JCodecUtil.calcBufferSize(videoTrack.getMeta());
 					buffers = Picture.create(size.getWidth(), size.getHeight(), ColorSpace.YUV444).getData();
 				}
 				return buffers;
-			}
-
-			private Size calcBufferSize()
-			{
-				// declare output variables
-				int w = Integer.MIN_VALUE;
-				int h = Integer.MIN_VALUE;
-
-				// get track metadata
-				DemuxerTrackMeta meta = videoTrack.getMeta();
-
-				// allocate buffers to hold metadata
-				ByteBuffer codecBuffer = meta.getCodecPrivate().duplicate();
-				ByteBuffer nalBuffer;
-
-				// search the metadata for the size unit
-				while ((nalBuffer = H264Utils.nextNALUnit(codecBuffer)) != null)
-				{
-					// read unit from the nalBuffer
-					NALUnit unit = NALUnit.read(nalBuffer);
-
-					// only interested in Sequence Parameter Set units
-					if (unit.type != NALUnitType.SPS)
-					{
-						continue;
-					}
-
-					// read the sps from the buffer
-					// luckily jcodec does 99% of the work for us
-					SeqParameterSet sps = H264Utils.readSPS(nalBuffer);
-
-					// read the width from the parameters
-					int tempW = sps.picWidthInMbsMinus1 + 1;
-					if (tempW > w)
-					{
-						w = tempW;
-					}
-
-					// read the height from the parameters
-					int tempH = SeqParameterSet.getPicHeightInMbs(sps);
-					if (tempH > h)
-					{
-						h = tempH;
-					}
-				}
-
-				return new Size(w << 4, h << 4);
-			}
-
-			private BufferedImage toBufferedImage(Picture src)
-			{
-				if (src.getColor() != ColorSpace.RGB)
-				{
-					Picture rgb = Picture.create(src.getWidth(), src.getHeight(), ColorSpace.RGB);
-					ColorUtil.getTransform(src.getColor(), ColorSpace.RGB).transform(src, rgb);
-					src = rgb;
-				}
-
-				BufferedImage dst = new BufferedImage(src.getWidth(), src.getHeight(), BufferedImage.TYPE_INT_RGB);
-				int[] data = ((DataBufferInt) dst.getRaster().getDataBuffer()).getData();
-				byte[] srcData = src.getPlaneData(0);
-
-				for (int i = 0; i < data.length; i++)
-				{
-					int color = (srcData[(i * 3)] + 128) << 16; // r
-					color |= (srcData[(i * 3) + 1] + 128) << 8; // g
-					color |= (srcData[(i * 3) + 2] + 128); // b
-					data[i] = color;
-				}
-
-				return dst;
 			}
 		}
 	}

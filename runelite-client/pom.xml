@@ -215,11 +215,6 @@
 			<artifactId>jcodec</artifactId>
 			<version>0.2.6-SNAPSHOT</version>
 		</dependency>
-		<dependency>
-			<groupId>org.jcodec</groupId>
-			<artifactId>jcodec-javase</artifactId>
-			<version>0.2.6-SNAPSHOT</version>
-		</dependency>
 
 		<dependency>
 			<groupId>net.runelite</groupId>

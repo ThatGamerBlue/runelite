@@ -81,7 +81,7 @@ public class LoginScreenPlugin extends Plugin implements KeyListener
 
 	private String usernameCache;
 
-	private JCodecMP4Decoder decoder;
+	private IJCodecMP4Decoder decoder;
 	private boolean fpsTick = true;
 	private SpritePixels blankPixels;
 
@@ -413,7 +413,7 @@ public class LoginScreenPlugin extends Plugin implements KeyListener
 		client.lmao(blankPixels);
 	}
 
-	private JCodecMP4Decoder createMP4Decoder()
+	private IJCodecMP4Decoder createMP4Decoder()
 	{
 		try
 		{
@@ -421,7 +421,7 @@ public class LoginScreenPlugin extends Plugin implements KeyListener
 			{
 				decoder.destroy();
 			}
-			return new JCodecMP4Decoder(ANIMATED_LOGIN_SCREEN_FILE);
+			return new CachingJCodecMP4Decoder(ANIMATED_LOGIN_SCREEN_FILE);
 		}
 		catch (Exception e)
 		{
